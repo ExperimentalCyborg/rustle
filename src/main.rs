@@ -73,7 +73,7 @@ fn play(word: &String, guesses: &u32) {
             );
             continue; // Don't count the guess, mistakes happen.
         }
-        // Print the visual result of the guess
+        // Print the visual result of the guess TODO this doesn't work right
         for n in 0..word.len() {
             if word[n..n + 1] == input[n..n + 1] {
                 print!("{}", SIGN_CORRECT);
