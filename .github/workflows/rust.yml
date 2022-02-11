@@ -22,3 +22,8 @@ jobs:
       run: cargo build --release --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Create artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: release
+        path: target/release/rustle*
