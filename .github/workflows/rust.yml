@@ -25,5 +25,5 @@ jobs:
     - name: Create artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: release
+        name: release_${{ matrix.os }}
         path: target/release/rustle*
