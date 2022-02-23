@@ -9,3 +9,4 @@ edition = "2021"
 clap = { version = "3.0.14", features = ["derive"] }
 colorful = "0.2.1"
 rand = "0.8.4"
+crossterm = "0.23.0"

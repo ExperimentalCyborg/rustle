@@ -1,12 +1,17 @@
 use std::fs;
+use std::io::{Write, stdout};
 use rand::Rng;
+
 use clap::Parser;
-use std::io::{self, Write};
+use colorful::{Color, Colorful};
+use crossterm::{cursor, terminal, terminal::ClearType, ExecutableCommand};
 
-const SIGN_CORRECT: &str = "🟩";
-const SIGN_MISPLACED: &str = "🟨";
-const SIGN_WRONG: &str = "⬛";
+const COLOUR_BG_CORRECT: Color = Color::DarkGreen;
+const COLOUR_BG_MISPLACED: Color = Color::DarkOrange;
+const COLOUR_BG_WRONG: Color = Color::DarkGray;
+const COLOUR_FG: Color = Color::White;
 
+// --- Commandline arguments stuff ---
 #[derive(Parser, Debug)]
 #[clap(
     version,
@@ -15,19 +20,19 @@ const SIGN_WRONG: &str = "⬛";
     long_about = None
 )]
 struct Args {
-    /// Specific word to use
+    // Specific word to use
     #[clap(short, long, default_value = "", hide_default_value = true)]
     word: String,
 
-    /// Path to a word list file
+    // Path to a word list file
     #[clap(short, long, default_value = "", hide_default_value = true)]
     list_file: String,
 
-    /// Word separator for the word list
+    // Word separator for the word list
     #[clap(short, long, default_value = "\n")]
     separator: String,
 
-    /// Amount of guesses available
+    // Amount of guesses available
     #[clap(short, long, default_value_t = 6)]
     guesses: u32,
 }
@@ -46,8 +51,7 @@ fn get_word_from_list(path: &String, separator: &String) -> String {
 }
 
 fn play(word: &String, guesses: &u32) {
-    #[cfg(debug_assertions)]
-    println!("{}", word);
+    debug_print(format!("The word is: {}", word).as_str());
 
     let mut guesses_left: u32 = *guesses;
     println!(
@@ -60,8 +64,12 @@ fn play(word: &String, guesses: &u32) {
         // Get input
         let mut input = String::new();
         print!("Your guess: ");
-        io::stdout().flush().unwrap();
+        stdout().flush().unwrap();
         std::io::stdin().read_line(&mut input).unwrap();
+        stdout().execute(cursor::MoveUp(1)).unwrap();
+        stdout().execute(terminal::Clear(ClearType::FromCursorDown)).unwrap();
+        stdout().flush().unwrap();
+
         input = input.trim().to_string();
 
         // Wrong word length
@@ -75,12 +83,14 @@ fn play(word: &String, guesses: &u32) {
         }
         // Print the visual result of the guess TODO this doesn't work right
         for n in 0..word.len() {
-            if word[n..n + 1] == input[n..n + 1] {
-                print!("{}", SIGN_CORRECT);
+            let word_char = format!("{}", word.chars().nth(n).unwrap());
+            let input_char = format!("{}", input.chars().nth(n).unwrap());
+            if word_char == input_char {
+                print!("{}", input_char.color(COLOUR_FG).bg_color(COLOUR_BG_CORRECT).bold());
             } else if word.contains(&input[n..n + 1]) {
-                print!("{}", SIGN_MISPLACED);
+                print!("{}", input_char.color(COLOUR_FG).bg_color(COLOUR_BG_MISPLACED).bold());
             } else {
-                print!("{}", SIGN_WRONG);
+                print!("{}", input_char.color(COLOUR_FG).bg_color(COLOUR_BG_WRONG).bold());
             }
         }
         println!();
@@ -103,19 +113,22 @@ fn play(word: &String, guesses: &u32) {
     println!("The word was \"{}\"!\n Better luck next time. 😔", word);
 }
 
+fn debug_print(text: &str){
+    #[cfg(debug_assertions)]
+    println!("{}", text.color(Color::White).bg_color(Color::Red));
+}
+
 fn main() {
     let args = Args::parse();
+    debug_print("Debug mode is enabled");
     if args.word != "" {
-        #[cfg(debug_assertions)]
-        println!("given word");
+        debug_print("Word source: given word");
         play(&args.word, &args.guesses);
     } else if args.list_file != "" {
-        #[cfg(debug_assertions)]
-        println!("word list");
+        debug_print("Word source: external word list");
         play(&get_word_from_list(&args.list_file, &args.separator), &args.guesses);
     } else {
-        #[cfg(debug_assertions)]
-        println!("internal word");
+        debug_print("Word source: internal word list");
         play(&get_word_from_internal(), &args.guesses);
     }
 }
