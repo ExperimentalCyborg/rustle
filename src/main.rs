@@ -20,19 +20,19 @@ const COLOUR_FG: Color = Color::White;
     long_about = None
 )]
 struct Args {
-    // Specific word to use
+    /// Specific word to use
     #[clap(short, long, default_value = "", hide_default_value = true)]
     word: String,
 
-    // Path to a word list file
+    /// Path to a word list file
     #[clap(short, long, default_value = "", hide_default_value = true)]
     list_file: String,
 
-    // Word separator for the word list
+    /// Word separator for the word list
     #[clap(short, long, default_value = "\n")]
     separator: String,
 
-    // Amount of guesses available
+    /// Maximum amount of guesses
     #[clap(short, long, default_value_t = 6)]
     guesses: u32,
 }
