@@ -45,7 +45,7 @@ fn get_word_from_internal() -> String {
 fn get_word_from_list(path: &String, separator: &String) -> String {
     let raw: String = fs::read_to_string(path).expect("Error opening file");
     let lines: Vec<&str> = raw.as_str().split(separator).collect();
-    
+
     let mut rng = rand::thread_rng();
     String::from(lines[rng.gen_range(0..lines.len())])
 }
@@ -81,16 +81,32 @@ fn play(word: &String, guesses: &u32) {
             );
             continue; // Don't count the guess, mistakes happen.
         }
-        // Print the visual result of the guess TODO this doesn't work right
+        // Process the guess and print the result
+        let mut available_letters = vec![true; word.len()];
         for n in 0..word.len() {
-            let word_char = format!("{}", word.chars().nth(n).unwrap());
-            let input_char = format!("{}", input.chars().nth(n).unwrap());
+            let word_char = word.chars().nth(n).unwrap();
+            let input_char = input.chars().nth(n).unwrap();
             if word_char == input_char {
-                print!("{}", input_char.color(COLOUR_FG).bg_color(COLOUR_BG_CORRECT).bold());
-            } else if word.contains(&input[n..n + 1]) {
-                print!("{}", input_char.color(COLOUR_FG).bg_color(COLOUR_BG_MISPLACED).bold());
-            } else {
-                print!("{}", input_char.color(COLOUR_FG).bg_color(COLOUR_BG_WRONG).bold());
+                print!("{}", format!("{}", input_char).color(COLOUR_FG).bg_color(COLOUR_BG_CORRECT).bold());
+            }else{
+                let mut found = false;
+                for n in 0..word.len() {
+                    let word_char_i = word.chars().nth(n).unwrap();
+                    let input_char_i = input.chars().nth(n).unwrap();
+                    if !available_letters[n]{ // this letter is already taken
+                        continue;
+                    }else if word_char_i == input_char_i { // this letter is correctly guessed, so it should be taken
+                        available_letters[n] = false;
+                    }else if word_char_i == input_char{ // unclaimed matching letter
+                        print!("{}", format!("{}", input_char).color(COLOUR_FG).bg_color(COLOUR_BG_MISPLACED).bold());
+                        available_letters[n] = false;
+                        found = true;
+                        break;
+                    }
+                }
+                if !found{
+                    print!("{}", format!("{}", input_char).color(COLOUR_FG).bg_color(COLOUR_BG_WRONG).bold());
+                }
             }
         }
         println!();
@@ -113,9 +129,9 @@ fn play(word: &String, guesses: &u32) {
     println!("The word was \"{}\"!\n Better luck next time. 😔", word);
 }
 
-fn debug_print(text: &str){
+fn debug_print(_text: &str) {
     #[cfg(debug_assertions)]
-    println!("{}", text.color(Color::White).bg_color(Color::Red));
+    println!("{}", _text.color(Color::White).bg_color(Color::Red));
 }
 
 fn main() {
