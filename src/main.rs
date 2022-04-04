@@ -1,6 +1,6 @@
-use std::fs;
-use std::io::{Write, stdout};
 use rand::Rng;
+use std::fs;
+use std::io::{stdout, Write};
 
 use clap::Parser;
 use colorful::{Color, Colorful};
@@ -35,6 +35,14 @@ struct Args {
     /// Maximum amount of guesses
     #[clap(short, long, default_value_t = 6)]
     guesses: u32,
+
+    /// Start a new game automatically after the game is over, don't ask
+    #[clap(short, long)]
+    replay: bool,
+
+    /// Exit after the game is over
+    #[clap(short, long)]
+    noreplay: bool,
 }
 
 fn get_word_from_internal() -> String {
@@ -67,7 +75,9 @@ fn play(word: &String, guesses: &u32) {
         stdout().flush().unwrap();
         std::io::stdin().read_line(&mut input).unwrap();
         stdout().execute(cursor::MoveUp(1)).unwrap();
-        stdout().execute(terminal::Clear(ClearType::FromCursorDown)).unwrap();
+        stdout()
+            .execute(terminal::Clear(ClearType::FromCursorDown))
+            .unwrap();
         stdout().flush().unwrap();
 
         input = input.trim().to_string();
@@ -87,25 +97,46 @@ fn play(word: &String, guesses: &u32) {
             let word_char = word.chars().nth(n).unwrap();
             let input_char = input.chars().nth(n).unwrap();
             if word_char == input_char {
-                print!("{}", format!("{}", input_char).color(COLOUR_FG).bg_color(COLOUR_BG_CORRECT).bold());
-            }else{
+                print!(
+                    "{}",
+                    format!("{}", input_char)
+                        .color(COLOUR_FG)
+                        .bg_color(COLOUR_BG_CORRECT)
+                        .bold()
+                );
+            } else {
                 let mut found = false;
                 for n in 0..word.len() {
                     let word_char_i = word.chars().nth(n).unwrap();
                     let input_char_i = input.chars().nth(n).unwrap();
-                    if !available_letters[n]{ // this letter is already taken
+                    if !available_letters[n] {
+                        // this letter is already taken
                         continue;
-                    }else if word_char_i == input_char_i { // this letter is correctly guessed, so it should be taken
+                    } else if word_char_i == input_char_i {
+                        // this letter is correctly guessed, so it should be taken
                         available_letters[n] = false;
-                    }else if word_char_i == input_char{ // unclaimed matching letter
-                        print!("{}", format!("{}", input_char).color(COLOUR_FG).bg_color(COLOUR_BG_MISPLACED).bold());
+                    } else if word_char_i == input_char {
+                        // unclaimed matching letter
+                        print!(
+                            "{}",
+                            format!("{}", input_char)
+                                .color(COLOUR_FG)
+                                .bg_color(COLOUR_BG_MISPLACED)
+                                .bold()
+                        );
                         available_letters[n] = false;
                         found = true;
                         break;
                     }
                 }
-                if !found{
-                    print!("{}", format!("{}", input_char).color(COLOUR_FG).bg_color(COLOUR_BG_WRONG).bold());
+                if !found {
+                    print!(
+                        "{}",
+                        format!("{}", input_char)
+                            .color(COLOUR_FG)
+                            .bg_color(COLOUR_BG_WRONG)
+                            .bold()
+                    );
                 }
             }
         }
@@ -137,15 +168,32 @@ fn debug_print(_text: &str) {
 fn main() {
     let args = Args::parse();
     debug_print("Debug mode is enabled");
-    if args.word != "" {
-        debug_print("Word source: given word");
-        play(&args.word, &args.guesses);
-    } else if args.list_file != "" {
-        debug_print("Word source: external word list");
-        play(&get_word_from_list(&args.list_file, &args.separator), &args.guesses);
-    } else {
-        debug_print("Word source: internal word list");
-        play(&get_word_from_internal(), &args.guesses);
+    loop {
+        if args.word != "" {
+            debug_print("Word source: given word");
+            play(&args.word, &args.guesses);
+        } else if args.list_file != "" {
+            debug_print("Word source: external word list");
+            play(&get_word_from_list(&args.list_file, &args.separator), &args.guesses);
+        } else {
+            debug_print("Word source: internal word list");   
+            play(&get_word_from_internal(), &args.guesses);
+        }
+        
+        if args.noreplay{
+            break;
+        }else if args.replay{
+            println!("\nNext word!");
+            continue
+        }else{
+            let mut input = String::new();
+            print!("Play again? (Y/N): ");
+            stdout().flush().unwrap();
+            std::io::stdin().read_line(&mut input).unwrap();
+            if input[..1].to_lowercase() != "y" {
+                break;
+            }
+        }
     }
 }
 
